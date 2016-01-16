@@ -37,14 +37,14 @@ def check_format(line):
         rp = [m.start() for m in re.finditer(key, line)]
         if len(rp) > 0:
             wrong_idx_list += rp
-            print key
+            print 'REPLACE:' + key.encode('utf-8')
             newline = line.replace(key, replace_dict[key])
         
 
     #rule 1, no space between Chinese chars
     for i in range(2, len(line)):
         if re.match(chinese_word_pattern, line[i]) and re.match(chinese_word_pattern, line[i-2]) and line[i-1] == ' ':
-            print line[i-2].encode('utf-8') + ' '  + line[i].encode('utf-8')
+            print 'CHINESE WORD SPACE:' + line[i-2].encode('utf-8') + ' '  + line[i].encode('utf-8')
             del_idx.append(i-1)
             wrong_idx_list += [i-2, i-1, i]
 
@@ -53,7 +53,7 @@ def check_format(line):
     for i in range(1, len(line) - 1):
         if line[i] in notes:
             if line[i-1] == ' ' or line[i+1] == ' ':
-                print line.encode('utf-8')
+                print 'FULL NOTE SPACE:' + line.encode('utf-8')
                 wrong_idx_list += [i-1, i, i+1]
                 if line[i-1] == ' ':
                     del_idx.append(i-1)
@@ -67,7 +67,7 @@ def check_format(line):
         for word in wrong_bracket:
             idx = line.find(word)
             wrong_idx_list += range(idx, idx + len(word))
-        print line + ' bracket'
+        print 'INVALID BRACKET:' + word.encode('utf-8')
         
 
 #    #rule 2.1, no space between chinese and english(numbers)
@@ -88,19 +88,22 @@ def check_format(line):
         else:
             new_line_part.append(newline[del_idx[i] + 1:])
     #rule 3, wrong english name
-    cand_english_name = re.findall('[a-zA-Z \']+', line)
+    cand_english_name = re.findall('[a-zA-Z&0-9 \']+', line)
     newline = ''.join(new_line_part)
     for s in cand_english_name:
         slen = len(s)
         s = s.strip()
+#        if len(s) > 0:
+#            continue
         if len(s) < 2 or s.find(' ') == -1:
             continue
         if s in eng_dict:
             if s != eng_dict[s]:
-                print 'replace' + s + ' to ' + eng_dict[s]
+                print 'ENGLISH TERMS ERROR:' + s + ' to ' + eng_dict[s]
                 wrong_idx_list += [line.find(s) + sl for sl in range(0, slen)]
                 newline = newline.replace(s, eng_dict[s])
-            continue
+        continue
+        
         search_url = 'http://www.baidu.com/s?wd=' + s.replace(' ', '+') + '+wikipedia' + '&sl_lang=en&rsv_srlang=en&rsv_rq=en'
         print search_url
         res = urllib2.urlopen(search_url)
